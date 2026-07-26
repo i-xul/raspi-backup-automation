@@ -2,39 +2,58 @@
 
 ## Purpose
 
-This project was created to automate backups for a Raspberry Pi server environment.
+This project was created to build a reliable, repeatable, and production-tested backup workflow for self-hosted Raspberry Pi systems.
 
-The goal was to reduce manual work, improve reliability, and ensure that recent backup snapshots are always available in case of failure or data loss.
+The objective was not only to automate backups, but also to verify that they can be successfully restored after an actual failure.
 
-## What I learned
+---
 
-During this project I learned more about:
+## What I Learned
 
-- automating system tasks using shell scripting
-- using rsync over SSH for efficient data transfer
-- structuring backup snapshots with timestamp-based naming
-- implementing retention policies to manage storage usage
-- handling errors and ensuring reliable execution
-- adding simple notification mechanisms for monitoring
+During this project I gained practical experience with:
 
-## Practical lessons
+- snapshot-based backup strategies
+- rsync over SSH
+- encrypted offsite backups using rclone Crypt
+- integrity verification using `rclone cryptcheck`
+- snapshot retention policies
+- disaster recovery planning
+- automated email notifications
+- defensive shell scripting
+- validating real-world backup workflows
 
-One key observation was that manual backups are easy to forget or delay.
+---
 
-By automating the process, backups become:
+## Practical Lessons
 
-- consistent
-- predictable
-- easier to monitor
+Several important observations were made during development.
 
-Another important lesson was the value of keeping a limited number of snapshots instead of storing everything indefinitely.
+### A backup is not enough
 
-This improves both storage efficiency and clarity when restoring data.
+Creating backups alone does not guarantee recoverability.
 
-## Portfolio note
+A backup should always be validated and periodically restored to confirm that recovery actually works.
 
-This repository is based on a real backup workflow adapted into a public example.
+### Validation before retention
 
-Sensitive details such as real paths, hostnames, and credentials have been removed.
+Old backups should never be removed before the newest backup has been verified successfully.
 
-AI tools were used during development for ideation, debugging, and documentation, but the workflow was tested and validated manually in a real environment.
+This significantly reduces the risk of ending up without a usable backup.
+
+### Separate backup stages
+
+Separating local backups from offsite replication simplifies troubleshooting and reduces operational risk.
+
+Each stage can be validated independently.
+
+---
+
+## Portfolio Note
+
+This repository is based on a real self-hosted backup solution.
+
+Sensitive information such as usernames, hostnames, email addresses, credentials, and filesystem paths has been replaced with generic examples before publication.
+
+AI tools (ChatGPT) were used for brainstorming, debugging, documentation, and code review.
+
+All production logic was manually implemented, tested, and validated in a real self-hosted environment before publication.

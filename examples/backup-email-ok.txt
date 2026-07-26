@@ -1,0 +1,14 @@
+Subject:
+[Backup] Raspberry Pi 5 offsite OK — raspberrypi — 2026-07-25
+
+Body:
+
+Raspberry Pi 5 offsite backup completed successfully.
+
+Host: raspberrypi
+Snapshot: 2026-07-20_04-00-01
+Start time: 2026-07-25 10:04:31
+End time: 2026-07-25 11:23:41
+Cloud retention: keeping latest 3 snapshots
+
+Validation: cryptcheck completed successfully

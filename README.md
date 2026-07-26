@@ -1,69 +1,142 @@
 # raspi-backup-automation
 
-Automated backup workflow for a Raspberry Pi server with snapshot rotation and status notifications.
+Automated snapshot-based backup solution for Raspberry Pi and other self-hosted Linux systems.
+
+The project implements a multi-stage backup workflow consisting of local snapshot creation, encrypted offsite replication, integrity verification, retention management, and automatic email notifications.
+
+---
 
 ## Overview
 
-This repository documents a practical backup automation setup used for a Raspberry Pi server environment.
+This repository documents a production-tested backup workflow developed for a self-hosted Raspberry Pi environment.
 
-The goal of the project is to create repeatable backup snapshots, keep only a defined number of recent backups, and provide clear success or failure feedback after each run.
+Rather than focusing only on creating backups, the project emphasizes backup validation, restore capability, and operational reliability.
 
-## Current Workflow
+The workflow has been designed to minimize manual maintenance while ensuring that backups remain both verifiable and recoverable.
 
-The backup process includes the following steps:
+---
 
-* verify SSH connectivity to the backup target
-* create the destination directory if needed
-* transfer the server backup over SSH
-* update a `latest` symlink to point to the newest snapshot
-* remove older snapshots and keep only the most recent ones
-* send a status notification after the job finishes
+## Architecture
+
+```text
+Raspberry Pi
+     │
+     ▼
+Local NAS snapshots
+     │
+     ▼
+Encrypted pCloud storage
+     │
+     ▼
+Integrity verification
+    (rclone cryptcheck)
+     │
+     ▼
+Snapshot retention
+     │
+     ▼
+Email notifications
+```
+
+---
+
+## Backup Workflow
+
+The backup process currently consists of the following stages:
+
+1. Create a local NAS snapshot.
+2. Verify snapshot freshness.
+3. Upload the latest snapshot to encrypted cloud storage.
+4. Validate uploaded data using `rclone cryptcheck`.
+5. Remove expired cloud snapshots according to the retention policy.
+6. Send a success or failure notification.
+
+---
 
 ## Features
 
-* automated server backup over SSH
-* snapshot-based backup structure
-* rotation logic for old backups
-* latest-snapshot symlink for quick access
-* success/failure notification support
-* practical design for home server or lab use
+Current functionality includes:
 
-## Goals
+- snapshot-based backup workflow
+- encrypted offsite backups
+- automated snapshot retention
+- integrity verification using `rclone cryptcheck`
+- restore-tested backup chain
+- success and failure email notifications
+- timeout protection
+- locking to prevent overlapping jobs
+- production-tested automation
 
-* automate recurring Raspberry Pi server backups
-* reduce manual maintenance work
-* make rollback and snapshot access easier
-* create a reusable backup workflow for self-hosted environments
-* document the setup in public portfolio form
+---
+
+## Validation
+
+The complete workflow has been validated in a real production environment.
+
+Successfully verified:
+
+- local snapshot creation
+- encrypted cloud upload
+- integrity verification
+- full restore procedure
+- symbolic link preservation
+- retention policy
+- success notifications
+- failure notifications
+
+Detailed validation results are documented in `VALIDATION.md`.
+
+---
 
 ## Environment
 
-* Raspberry Pi
-* Linux shell scripting
-* SSH
-* remote storage target
-* email notifications
+Current technologies include:
 
-## Notes
+- Raspberry Pi
+- Linux
+- Bash
+- rsync
+- SSH
+- rclone
+- pCloud Crypt
+- cron
+- SMTP email notifications
 
-This repository is based on a real backup workflow adapted into a public example.
-
-AI tools (ChatGPT) were used for idea exploration, script refinement, debugging, and documentation support. The final workflow was tested and adjusted manually in a real environment.
-
-Sensitive information such as real usernames, hostnames, paths, and addresses has been removed from this public version.
+---
 
 ## Repository Structure
 
-- `scripts/` – backup automation scripts
-- `examples/` – example outputs and notifications
-- `docs/` – project notes and documentation
+```
+README.md              Project overview
 
-## Next Steps
+VALIDATION.md          Production validation results
 
-Possible future improvements:
+docs/                  Architecture and project documentation
 
-- support for incremental backups
-- compression options
-- integration with external monitoring tools
-- support for multiple backup targets
-- logging improvements and alerting
+scripts/               Backup automation scripts
+
+examples/              Example configuration and email templates
+```
+
+---
+
+## Future Expansion
+
+Planned future improvements include:
+
+- additional Raspberry Pi backup targets
+- Windows backup integration
+- Ubuntu backup integration
+- Raspberry Pi 3 integration
+- multiple encrypted offsite destinations
+- expanded documentation and monitoring
+
+---
+
+## Notes
+
+This repository is based on a real production backup workflow adapted into a public example.
+
+Sensitive information such as usernames, hostnames, credentials, email addresses, and storage paths has been replaced with generic examples.
+
+AI tools (ChatGPT) were used for brainstorming, architecture discussions, script refinement, debugging, documentation support, and code review.

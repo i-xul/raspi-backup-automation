@@ -1,0 +1,17 @@
+Subject:
+[Backup] Raspberry Pi 5 offsite FAILED — raspberrypi — 2026-07-24
+
+Body:
+
+Raspberry Pi 5 offsite backup FAILED
+
+Host: raspberrypi
+Start time: 2026-07-24 20:15:01
+End time: 2026-07-24 20:15:02
+Exit code: 1
+Snapshot: 2026-07-20_04-00-01
+
+Last log output:
+
+ERROR: Latest NAS snapshot is too old:
+2026-07-20_04-00-01
