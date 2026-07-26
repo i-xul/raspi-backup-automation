@@ -1,6 +1,6 @@
 # raspi-backup-automation
 
-Automated snapshot-based backup solution for Raspberry Pi and other self-hosted Linux systems.
+Automated backup framework for Raspberry Pi, Windows, Ubuntu, and other self-hosted systems using centralized encrypted offsite replication.
 
 The project implements a multi-stage backup workflow consisting of local snapshot creation, encrypted offsite replication, integrity verification, retention management, and automatic email notifications.
 
@@ -19,37 +19,42 @@ The workflow has been designed to minimize manual maintenance while ensuring tha
 ## Architecture
 
 ```text
-Raspberry Pi
-     │
-     ▼
-Local NAS snapshots
-     │
-     ▼
-Encrypted pCloud storage
-     │
-     ▼
-Integrity verification
-    (rclone cryptcheck)
-     │
-     ▼
-Snapshot retention
-     │
-     ▼
-Email notifications
+Raspberry Pi 5 ──┐
+                 │
+Windows 11 ──────┼──► NAS storage attached to Raspberry Pi 4
+                 │                    │
+Ubuntu ──────────┘                    ▼
+                           Central backup coordinator
+                                      │
+                                      ▼
+                           Encrypted pCloud storage
+                                      │
+                                      ▼
+                           Integrity verification
+                              (rclone cryptcheck)
+                                      │
+                                      ▼
+                              Backup retention
+                                      │
+                                      ▼
+                              Email notifications
 ```
 
 ---
 
 ## Backup Workflow
 
-The backup process currently consists of the following stages:
+Each source system first creates or transfers a local backup to the NAS.
 
-1. Create a local NAS snapshot.
-2. Verify snapshot freshness.
-3. Upload the latest snapshot to encrypted cloud storage.
-4. Validate uploaded data using `rclone cryptcheck`.
-5. Remove expired cloud snapshots according to the retention policy.
-6. Send a success or failure notification.
+The central backup coordinator then performs the following stages:
+
+1. Detect and validate the latest available backup.
+2. Upload the backup to encrypted cloud storage.
+3. Validate uploaded data using `rclone cryptcheck`.
+4. Remove expired cloud backups according to the retention policy.
+5. Send a success or failure notification.
+
+Backup discovery and retention rules may differ by source system. Raspberry Pi backups use timestamped snapshots, while Windows backups are created as EaseUS `.pbd` files.
 
 ---
 
@@ -120,16 +125,36 @@ examples/              Example configuration and email templates
 
 ---
 
+## Implementations
+
+### Completed
+
+- Raspberry Pi 5 local NAS snapshots
+- Raspberry Pi 5 encrypted offsite replication
+- Integrity verification, retention, restore validation, and notifications
+
+### In Progress
+
+- Windows 11 EaseUS backup replication from NAS to encrypted pCloud storage
+
+### Planned
+
+- Ubuntu local NAS backup and encrypted offsite replication
+- Raspberry Pi 4 NAS configuration backup
+- Additional Raspberry Pi systems
+
+---
+
 ## Future Expansion
 
 Planned future improvements include:
 
-- additional Raspberry Pi backup targets
-- Windows backup integration
 - Ubuntu backup integration
-- Raspberry Pi 3 integration
+- Raspberry Pi 4 NAS configuration backup
+- additional Raspberry Pi backup targets
 - multiple encrypted offsite destinations
 - expanded documentation and monitoring
+- optional centralized backup status dashboard
 
 ---
 

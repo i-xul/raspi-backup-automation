@@ -2,63 +2,83 @@
 
 ## Overview
 
-The backup solution is intentionally divided into two independent stages:
+The backup solution uses a centralized coordinator architecture.
 
-1. Local snapshot creation
-2. Encrypted offsite replication
+Source systems create or transfer their backups to NAS storage attached directly to a Raspberry Pi 4. The Raspberry Pi 4 then handles encrypted offsite replication, integrity verification, retention, logging, and email notifications.
 
-Separating these stages improves reliability, simplifies troubleshooting, and allows each phase to be validated independently before the next one begins.
+The workflow remains divided into two independent stages:
+
+1. Source-system backup creation
+2. Centralized encrypted offsite replication
+
+Separating these stages improves reliability, simplifies troubleshooting, and allows each phase to be validated independently.
 
 ---
 
 ## Backup Workflow
 
 ```text
-                    Raspberry Pi 5
-                          │
-                          ▼
-                Weekly local backup
-                          │
-                          ▼
-                     NAS snapshots
-                          │
-                          ▼
-              Verify snapshot freshness
-                          │
-                          ▼
-        Encrypted offsite upload (pCloud Crypt)
-                          │
-                          ▼
-        Integrity verification (rclone cryptcheck)
-                          │
-                          ▼
-           Cloud snapshot retention policy
-                          │
-                          ▼
-          Success / Failure email notification
+Raspberry Pi 5 ──► Timestamped NAS snapshots ──┐
+                                                │
+ Windows 11 ─────► EaseUS backup files ─────────┼──► Raspberry Pi 4
+                                                │     Backup Coordinator
+ Ubuntu ─────────► Local NAS backup ─────────────┘             │
+                                                              ▼
+                                                   Encrypted pCloud storage
+                                                              │
+                                                              ▼
+                                                   Integrity verification
+                                                    (rclone cryptcheck)
+                                                              │
+                                                              ▼
+                                                    Source-specific retention
+                                                              │
+                                                              ▼
+                                                   Success / Failure email
 ```
 
 ---
 
 ## Workflow Design
 
+### Central Backup Coordinator
+
+The Raspberry Pi 4 acts as the central backup coordinator because the NAS storage is physically attached to it.
+
+This design avoids requiring an additional Raspberry Pi to remain online solely for cloud replication. Once a source backup exists on the NAS, the original source system can be offline while the coordinator completes the offsite workflow.
+
+Coordinator responsibilities include:
+
+- detecting available source backups
+- validating backup freshness or completeness
+- encrypted pCloud upload
+- `rclone cryptcheck`
+- source-specific retention
+- logging
+- success and failure notifications
+
+
 ### Stage 1 – Local Backup
 
-The Raspberry Pi creates a local snapshot on NAS storage.
+Each source system creates or transfers its local backup to NAS storage.
 
-This stage focuses only on producing a reliable local recovery point.
+Current and planned source formats include:
 
-No cloud synchronization is performed during this phase.
+- timestamped Raspberry Pi snapshots
+- Windows EaseUS `.pbd` backup files
+- future Ubuntu backups
+
+This stage focuses only on producing a reliable local recovery point. No cloud synchronization is performed by the source system.
 
 ---
 
 ### Stage 2 – Offsite Replication
 
-The latest validated snapshot is uploaded to encrypted cloud storage.
+The Raspberry Pi 4 backup coordinator uploads validated backups from NAS storage to encrypted cloud storage.
 
-The upload process is completely independent from local backup creation.
+The upload process is independent from source-system backup creation. This allows offsite replication to continue even when the original Windows, Ubuntu, or Raspberry Pi source system is offline.
 
-Running these stages separately reduces complexity and prevents one operation from affecting the other.
+Backup discovery and retention are handled separately for each source type.
 
 ---
 
