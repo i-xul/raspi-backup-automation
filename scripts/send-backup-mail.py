@@ -19,6 +19,7 @@ import smtplib
 import socket
 import ssl
 import sys
+import os
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -32,6 +33,7 @@ ENV_FILE = "/etc/backup-mail.env"
 ###############################################################################
 # Environment Loader
 ###############################################################################
+
 
 def load_env(path: str) -> dict:
     env = {}
@@ -49,9 +51,11 @@ def load_env(path: str) -> dict:
 
     return env
 
+
 ###############################################################################
 # Email Sender
 ###############################################################################
+
 
 def send_email(status: str, body: str) -> None:
     env = load_env(ENV_FILE)
@@ -66,11 +70,9 @@ def send_email(status: str, body: str) -> None:
 
     hostname = socket.gethostname()
     today = datetime.now().strftime("%Y-%m-%d")
+    backup_name = os.environ.get("BACKUP_NAME", "Raspberry Pi 5 offsite")
 
-    subject = (
-        f"[Backup] Raspberry Pi 5 offsite "
-        f"{status} — {hostname} — {today}"
-    )
+    subject = f"[Backup] {backup_name} {status} — {hostname} — {today}"
 
     message = MIMEMultipart()
     message["From"] = from_email
@@ -86,9 +88,11 @@ def send_email(status: str, body: str) -> None:
         server.login(smtp_user, smtp_pass)
         server.sendmail(from_email, [to_email], message.as_string())
 
+
 ###############################################################################
 # Program Entry Point
 ###############################################################################
+
 
 def main() -> None:
     if len(sys.argv) != 2:

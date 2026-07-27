@@ -48,7 +48,7 @@ set -Eeuo pipefail
 LOCAL_BASE="/path/to/nas/easeus_w11_backups/HMASI/Disks backup"
 REMOTE_BASE="pcloud-crypt:windows-11/easeus"
 
-RCLONE_TIMEOUT="12h"
+RCLONE_TIMEOUT="24h"
 MINIMUM_FILE_AGE_MINUTES=60
 REMOTE_CHECK_TIMEOUT="5m"
 
@@ -87,7 +87,9 @@ send_mail() {
     local status="$1"
     local body_file="$2"
 
-    if ! sudo "$MAIL_HELPER" "$status" < "$body_file"; then
+    if ! sudo BACKUP_NAME="Windows 11 EaseUS offsite" \
+        "$MAIL_HELPER" "$status" < "$body_file"
+    then
         logger -t windows11-offsite-backup \
             "Could not send $status email notification. See $LOG_FILE"
 
