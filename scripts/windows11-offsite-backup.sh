@@ -60,6 +60,7 @@ LOCK_FILE="/tmp/windows11-offsite-backup.lock"
 LOG_FILE="/path/to/nas/easeus_w11_backups/windows11-offsite-backup.log"
 
 MAIL_HELPER="/usr/local/bin/send-backup-mail.py"
+RCLONE_CONFIG="/path/to/rclone/rclone.conf"
 
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 REPORT_FILE="$(mktemp)"
@@ -270,7 +271,7 @@ fi
 log "Checking encrypted pCloud connection..."
 
 if ! timeout "$REMOTE_CHECK_TIMEOUT" \
-    rclone lsd "pcloud-crypt:" \
+    rclone --config "$RCLONE_CONFIG" lsd "pcloud-crypt:" \
     >> "$REPORT_FILE" 2>&1
 then
     fail "Cannot access encrypted pCloud remote or connection timed out."
@@ -287,7 +288,7 @@ log "pCloud connection OK."
 log "Starting encrypted EaseUS backup synchronization..."
 
 if ! timeout "$RCLONE_TIMEOUT" \
-    rclone sync \
+    rclone --config "$RCLONE_CONFIG" sync \
     "$LOCAL_BASE" \
     "$REMOTE_BASE" \
     "${RCLONE_SYNC_ARGS[@]}" \
@@ -313,7 +314,7 @@ else
     log "Validating encrypted cloud backup..."
 
     if ! timeout "$RCLONE_TIMEOUT" \
-        rclone cryptcheck \
+        rclone --config "$RCLONE_CONFIG" cryptcheck \
         "$LOCAL_BASE" \
         "$REMOTE_BASE" \
         >> "$REPORT_FILE" 2>&1
