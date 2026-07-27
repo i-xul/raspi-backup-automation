@@ -19,7 +19,6 @@ set -Eeuo pipefail
 #     - flock
 #     - timeout
 #     - find
-#     - sha256sum
 #
 # Workflow:
 #
@@ -51,6 +50,11 @@ REMOTE_BASE="pcloud-crypt:windows-11/easeus"
 
 RCLONE_TIMEOUT="12h"
 MINIMUM_FILE_AGE_MINUTES=60
+REMOTE_CHECK_TIMEOUT="5m"
+
+# Keep enabled until the script has been validated on the backup coordinator.
+# In dry-run mode, rclone reports planned changes without modifying pCloud.
+DRY_RUN=true
 
 LOCK_FILE="/tmp/windows11-offsite-backup.lock"
 LOG_FILE="/path/to/nas/easeus_w11_backups/windows11-offsite-backup.log"
@@ -83,7 +87,7 @@ send_mail() {
     local body_file="$2"
 
     if ! sudo "$MAIL_HELPER" "$status" < "$body_file"; then
-        logger -t raspi5-offsite-backup \
+        logger -t windows11-offsite-backup \
             "Could not send $status email notification. See $LOG_FILE"
 
         echo "WARNING: Could not send $status email notification." \
@@ -99,15 +103,16 @@ send_failed_report() {
     trap - ERR
 
     {
-        echo "Raspberry Pi 5 offsite backup FAILED"
+        echo "Windows 11 EaseUS offsite backup FAILED"
         echo
         echo "Host: $(hostname)"
+        echo "Source: $LOCAL_BASE"
         echo "Start time: $START_TIME"
         echo "End time: $(date '+%Y-%m-%d %H:%M:%S')"
         echo "Exit code: $exit_code"
 
-        if [ -n "$SNAPSHOT" ]; then
-            echo "Snapshot: $SNAPSHOT"
+        if [ "$PBD_COUNT" -gt 0 ]; then
+            echo "EaseUS .pbd files detected: $PBD_COUNT"
         fi
 
         echo
@@ -139,7 +144,7 @@ fail() {
     echo "ERROR: $message" >> "$REPORT_FILE"
 
     if ! echo "ERROR: $message" >> "$LOG_FILE" 2>/dev/null; then
-        logger -t raspi5-offsite-backup \
+        logger -t windows11-offsite-backup \
             "Could not write failure to local backup log: $LOG_FILE"
     fi
 
@@ -162,7 +167,7 @@ log() {
     echo "$message" >> "$REPORT_FILE"
 
     if ! echo "$message" >> "$LOG_FILE" 2>/dev/null; then
-        logger -t raspi5-offsite-backup \
+        logger -t windows11-offsite-backup \
             "Could not write to local backup log: $LOG_FILE"
     fi
 
@@ -177,154 +182,166 @@ log() {
 exec 9>"$LOCK_FILE"
 
 if ! flock -n 9; then
-    fail "Another Raspberry Pi 5 offsite backup is already running."
+    fail "Another Windows 11 EaseUS offsite backup is already running."
 fi
 
 
-log "=== Raspberry Pi 5 offsite backup started ==="
+log "=== Windows 11 EaseUS offsite backup started ==="
 log "Start time: $START_TIME"
 
 ###############################################################################
-# Snapshot Validation
+# EaseUS Backup Set Validation
 ###############################################################################
 
-# Verify that the latest symlink exists.
-if [ ! -L "$LOCAL_LATEST" ]; then
-    fail "latest symlink does not exist: $LOCAL_LATEST"
+# Verify that the EaseUS backup directory exists.
+if [ ! -d "$LOCAL_BASE" ]; then
+    fail "EaseUS backup directory does not exist: $LOCAL_BASE"
 fi
 
 
-LATEST_PATH="$(readlink -f "$LOCAL_LATEST")"
+# Verify that at least one EaseUS .pbd backup file exists.
+PBD_COUNT="$(
+    find "$LOCAL_BASE" \
+        -maxdepth 1 \
+        -type f \
+        -name '*.pbd' \
+        -printf '.' |
+    wc -c
+)"
 
-
-# Verify that the resolved snapshot directory exists.
-if [ ! -d "$LATEST_PATH" ]; then
-    fail "latest points to a missing directory: $LATEST_PATH"
+if [ "$PBD_COUNT" -eq 0 ]; then
+    fail "No EaseUS .pbd backup files found in: $LOCAL_BASE"
 fi
 
-
-SNAPSHOT="$(basename "$LATEST_PATH")"
-REMOTE_DEST="$REMOTE_BASE/$SNAPSHOT"
-
-log "Latest local snapshot: $SNAPSHOT"
-log "Source: $LATEST_PATH"
-log "Destination: $REMOTE_DEST"
+log "EaseUS backup directory: $LOCAL_BASE"
+log "EaseUS .pbd files detected: $PBD_COUNT"
 
 
-# Validate the snapshot naming convention.
-if [[ ! "$SNAPSHOT" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
-    fail "Unexpected snapshot name: $SNAPSHOT"
+# Reject the backup set if any file was modified recently.
+#
+# This reduces the risk of starting an offsite sync while EaseUS is still
+# creating, consolidating, or modifying the local backup chain.
+if find "$LOCAL_BASE" \
+    -type f \
+    -mmin "-$MINIMUM_FILE_AGE_MINUTES" \
+    -print -quit |
+    grep -q .
+then
+    fail "EaseUS backup set contains files modified within the last $MINIMUM_FILE_AGE_MINUTES minutes."
 fi
 
+log "EaseUS backup age check passed."
 
-# Reject stale snapshots.
-SNAPSHOT_DATE="${SNAPSHOT%%_*}"
 
-if ! SNAPSHOT_EPOCH="$(date -d "$SNAPSHOT_DATE" +%s)"; then
-    fail "Could not parse snapshot date: $SNAPSHOT_DATE"
+# Record the source state before synchronization.
+#
+# The manifest contains relative paths, file sizes, and modification times.
+# It is used to detect changes to the backup set while the cloud operation is
+# running without calculating hashes for very large EaseUS backup files.
+if ! find "$LOCAL_BASE" \
+    -type f \
+    -printf '%P|%s|%T@\n' \
+    | sort \
+    > "$SOURCE_MANIFEST_BEFORE"
+then
+    fail "Could not create the initial EaseUS source manifest."
 fi
 
-CURRENT_EPOCH="$(date +%s)"
-MAX_AGE_SECONDS=$((MAX_SNAPSHOT_AGE_DAYS * 86400))
+log "Initial EaseUS source manifest created."
 
-if (( CURRENT_EPOCH - SNAPSHOT_EPOCH > MAX_AGE_SECONDS )); then
-    fail "Latest NAS snapshot is too old: $SNAPSHOT"
+
+RCLONE_SYNC_ARGS=(
+    --log-level INFO
+)
+
+if [ "$DRY_RUN" = true ]; then
+    RCLONE_SYNC_ARGS+=(--dry-run)
+    log "DRY RUN enabled: pCloud content will not be modified."
 fi
-
-log "Snapshot freshness check passed."
 
 ###############################################################################
-# Offsite Upload
+# Offsite Synchronization
 ###############################################################################
 
-# Verify access to the encrypted cloud remote before uploading.
+# Verify access to the encrypted cloud remote before synchronizing.
+#
+# Check the encrypted remote itself instead of the destination directory,
+# because the Windows backup destination may not exist before the first run.
 log "Checking encrypted pCloud connection..."
 
-if ! timeout 5m rclone lsd "$REMOTE_BASE" >> "$REPORT_FILE" 2>&1; then
-    fail "Cannot access encrypted pCloud backup location or connection timed out."
+if ! timeout "$REMOTE_CHECK_TIMEOUT" \
+    rclone lsd "pcloud-crypt:" \
+    >> "$REPORT_FILE" 2>&1
+then
+    fail "Cannot access encrypted pCloud remote or connection timed out."
 fi
 
 log "pCloud connection OK."
 
 
-# Upload the snapshot.
-log "Starting encrypted pCloud upload..."
+# Synchronize the complete EaseUS backup set.
+#
+# rclone sync updates the destination to match the source. Files removed by
+# EaseUS from the local backup set may therefore also be removed from the
+# encrypted cloud mirror.
+log "Starting encrypted EaseUS backup synchronization..."
 
-if ! timeout "$RCLONE_TIMEOUT" rclone copy \
-    "$LATEST_PATH" \
-    "$REMOTE_DEST" \
-    --links \
-    --log-level INFO \
+if ! timeout "$RCLONE_TIMEOUT" \
+    rclone sync \
+    "$LOCAL_BASE" \
+    "$REMOTE_BASE" \
+    "${RCLONE_SYNC_ARGS[@]}" \
     >> "$REPORT_FILE" 2>&1
 then
-    fail "Encrypted pCloud upload failed."
+    fail "Encrypted pCloud synchronization failed or timed out."
 fi
 
-log "pCloud upload completed."
+if [ "$DRY_RUN" = true ]; then
+    log "pCloud synchronization dry run completed."
+else
+    log "pCloud synchronization completed."
+fi
 
 ###############################################################################
 # Integrity Verification
 ###############################################################################
 
-# Validate the uploaded encrypted backup.
-log "Validating encrypted cloud backup..."
-
-if ! timeout "$RCLONE_TIMEOUT" rclone cryptcheck \
-    "$LATEST_PATH" \
-    "$REMOTE_DEST" \
-    --links \
-    >> "$REPORT_FILE" 2>&1
-then
-    fail "cryptcheck validation failed or timed out."
-fi
-
-log "Cloud validation successful."
-
-###############################################################################
-# Retention
-###############################################################################
-
-# Obtain the cloud snapshot list safely before retention processing.
-log "Checking cloud retention..."
-
-SNAPSHOT_LIST="$(mktemp)"
-
-
-if ! timeout 5m rclone lsf "$REMOTE_BASE" \
-    --dirs-only \
-    > "$SNAPSHOT_LIST" 2>> "$REPORT_FILE"
-then
-    rm -f "$SNAPSHOT_LIST"
-    fail "Failed to retrieve cloud snapshot list or operation timed out."
-fi
-
-mapfile -t CLOUD_SNAPSHOTS < <(
-    sed 's:/$::' "$SNAPSHOT_LIST" | sort -r
-)
-
-rm -f "$SNAPSHOT_LIST"
-
-log "Cloud snapshots found: ${#CLOUD_SNAPSHOTS[@]}"
-
-
-# Remove old cloud snapshots only after successful upload and validation.
-if [ "${#CLOUD_SNAPSHOTS[@]}" -gt "$KEEP" ]; then
-    log "Removing old cloud snapshots..."
-
-    for old_snapshot in "${CLOUD_SNAPSHOTS[@]:$KEEP}"; do
-        log "Removing: $old_snapshot"
-
-if ! timeout "$RCLONE_TIMEOUT" rclone purge \
-    "$REMOTE_BASE/$old_snapshot" \
-    >> "$REPORT_FILE" 2>&1
-then
-    fail "Failed or timed out while removing old cloud snapshot: $old_snapshot"
-fi
-
-    done
+if [ "$DRY_RUN" = true ]; then
+    log "Skipping cryptcheck because dry-run mode did not modify pCloud."
 else
-    log "No cloud snapshots need removal."
+    # Validate the encrypted cloud mirror against the local EaseUS backup set.
+    log "Validating encrypted cloud backup..."
+
+    if ! timeout "$RCLONE_TIMEOUT" \
+        rclone cryptcheck \
+        "$LOCAL_BASE" \
+        "$REMOTE_BASE" \
+        >> "$REPORT_FILE" 2>&1
+    then
+        fail "cryptcheck validation failed or timed out."
+    fi
+
+    log "Cloud validation successful."
 fi
+
+
+# Record the source state after synchronization and optional cloud validation.
+if ! find "$LOCAL_BASE" \
+    -type f \
+    -printf '%P|%s|%T@\n' \
+    | sort \
+    > "$SOURCE_MANIFEST_AFTER"
+then
+    fail "Could not create the final EaseUS source manifest."
+fi
+
+
+# Ensure that the EaseUS backup set remained unchanged for the entire run.
+if ! cmp -s "$SOURCE_MANIFEST_BEFORE" "$SOURCE_MANIFEST_AFTER"; then
+    fail "EaseUS backup set changed during the offsite backup process."
+fi
+
+log "EaseUS backup set remained unchanged during the entire run."
 
 ###############################################################################
 # Completion
@@ -332,21 +349,32 @@ fi
 
 END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 
-log "Offsite backup completed successfully: $SNAPSHOT"
+if [ "$DRY_RUN" = true ]; then
+    RESULT_DESCRIPTION="dry run completed successfully"
+    VALIDATION_DESCRIPTION="cryptcheck skipped in dry-run mode"
+else
+    RESULT_DESCRIPTION="completed successfully"
+    VALIDATION_DESCRIPTION="cryptcheck completed successfully"
+fi
+
+log "Windows 11 EaseUS offsite backup $RESULT_DESCRIPTION."
 log "End time: $END_TIME"
-log "=== Raspberry Pi 5 offsite backup finished ==="
+log "=== Windows 11 EaseUS offsite backup finished ==="
 
 
 {
-    echo "Raspberry Pi 5 offsite backup completed successfully."
+    echo "Windows 11 EaseUS offsite backup $RESULT_DESCRIPTION."
     echo
     echo "Host: $(hostname)"
-    echo "Snapshot: $SNAPSHOT"
+    echo "Source: $LOCAL_BASE"
+    echo "Destination: $REMOTE_BASE"
+    echo "EaseUS .pbd files: $PBD_COUNT"
+    echo "Dry run: $DRY_RUN"
     echo "Start time: $START_TIME"
     echo "End time: $END_TIME"
-    echo "Cloud retention: keeping latest $KEEP snapshots"
     echo
-    echo "Validation: cryptcheck completed successfully"
+    echo "Synchronization: $RESULT_DESCRIPTION"
+    echo "Validation: $VALIDATION_DESCRIPTION"
 } > "${REPORT_FILE}.mail"
 
 send_mail OK "${REPORT_FILE}.mail"
