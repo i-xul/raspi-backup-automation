@@ -188,6 +188,7 @@ if ! flock -n 9; then
     fail "Another Windows 11 EaseUS offsite backup is already running."
 fi
 
+: > "$LOG_FILE"
 
 log "=== Windows 11 EaseUS offsite backup started ==="
 log "Start time: $START_TIME"
@@ -290,7 +291,10 @@ log "pCloud connection OK."
 log "Starting encrypted EaseUS backup synchronization..."
 
 if ! timeout "$RCLONE_TIMEOUT" \
-    rclone --config "$RCLONE_CONFIG" sync \
+    rclone --config "$RCLONE_CONFIG" \
+    --stats=5m \
+    --stats-one-line \
+    sync \
     "$LOCAL_BASE" \
     "$REMOTE_BASE" \
     "${RCLONE_SYNC_ARGS[@]}" \
