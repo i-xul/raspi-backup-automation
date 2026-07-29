@@ -19,10 +19,10 @@ Separating these stages improves reliability, simplifies troubleshooting, and al
 
 ```text
 Raspberry Pi 5 ──► Timestamped NAS snapshots ──┐
-                                                │
- Windows 11 ─────► EaseUS backup files ─────────┼──► Raspberry Pi 4
-                                                │     Backup Coordinator
- Ubuntu ─────────► Local NAS backup ─────────────┘             │
+                                               │
+Windows 11 ─────► EaseUS backup files ─────────┼──►    Raspberry Pi 4
+                                               │     Backup Coordinator
+Ubuntu ─────────► Restic repository on NAS ─-──┘              │
                                                               ▼
                                                    Encrypted pCloud storage
                                                               │
@@ -66,7 +66,7 @@ Current and planned source formats include:
 
 - timestamped Raspberry Pi snapshots
 - Windows EaseUS `.pbd` backup files
-- future Ubuntu backups
+- Ubuntu restic repositories stored on NFS-mounted NAS storage
 
 This stage focuses only on producing a reliable local recovery point. No cloud synchronization is performed by the source system.
 

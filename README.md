@@ -131,17 +131,18 @@ examples/              Example configuration and email templates
 
 - Raspberry Pi 5 local NAS snapshots
 - Raspberry Pi 5 encrypted offsite replication
+- Windows 11 EaseUS backup replication from NAS to encrypted pCloud storage
 - Integrity verification, retention, restore validation, and notifications
 
 ### In Progress
 
-- Windows 11 EaseUS backup replication from NAS to encrypted pCloud storage
+- Ubuntu Desktop restic backups to NFS-mounted NAS storage
+- Ubuntu encrypted offsite replication through the Raspberry Pi 4 coordinator
 
 ### Planned
 
-- Ubuntu local NAS backup and encrypted offsite replication
 - Raspberry Pi 4 NAS configuration backup
-- Additional Raspberry Pi systems
+- Additional Raspberry Pi OS systems
 
 ---
 
@@ -149,7 +150,6 @@ examples/              Example configuration and email templates
 
 Planned future improvements include:
 
-- Ubuntu backup integration
 - Raspberry Pi 4 NAS configuration backup
 - additional Raspberry Pi backup targets
 - multiple encrypted offsite destinations
