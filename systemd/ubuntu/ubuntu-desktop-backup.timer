@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Ubuntu Desktop Restic Backup
+
+[Timer]
+OnCalendar=Sun 02:00:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

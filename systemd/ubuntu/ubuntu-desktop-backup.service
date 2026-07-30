@@ -1,0 +1,21 @@
+[Unit]
+Description=Ubuntu Desktop Restic Backup
+Documentation=https://github.com/i-xul/raspi-backup-automation
+Wants=network-online.target
+After=network-online.target
+
+ConditionPathIsMountPoint=/mnt/nas-backups
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ubuntu-desktop-backup
+
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
