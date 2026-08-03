@@ -62,9 +62,11 @@ Backup discovery and retention rules may differ by source system. Raspberry Pi b
 
 Current functionality includes:
 
+- Restic-based backup automation
 - snapshot-based backup workflow
 - encrypted offsite backups
-- automated snapshot retention
+- automated backup scheduling with systemd
+- automated snapshot retention and repository pruning
 - integrity verification using `rclone cryptcheck`
 - restore-tested backup chain
 - success and failure email notifications
@@ -85,7 +87,9 @@ Successfully verified:
 - integrity verification
 - full restore procedure
 - symbolic link preservation
-- retention policy
+- automated retention policy
+- repository pruning
+- NFS-based backup repository
 - success notifications
 - failure notifications
 
@@ -98,29 +102,46 @@ Detailed validation results are documented in `VALIDATION.md`.
 Current technologies include:
 
 - Raspberry Pi
+- Raspberry Pi OS
+- Ubuntu Desktop
+- Ubuntu Server
+- Windows 11
 - Linux
 - Bash
+- Restic
 - rsync
 - SSH
+- NFS
+- systemd
 - rclone
 - pCloud Crypt
-- cron
 - SMTP email notifications
 
 ---
 
 ## Repository Structure
 
-```
-README.md              Project overview
+```text
+README.md                 Project overview
 
-VALIDATION.md          Production validation results
+VALIDATION.md             Production validation results
 
-docs/                  Architecture and project documentation
+config/
+└── ubuntu/               Backup and retention configuration
 
-scripts/               Backup automation scripts
+docs/
+└── ubuntu/               Platform-specific documentation
 
-examples/              Example configuration and email templates
+examples/                 Example configuration files
+
+scripts/
+├── Raspberry Pi
+├── Ubuntu Desktop
+├── Windows 11
+└── Shared helper utilities
+
+systemd/
+└── ubuntu/               Backup and retention service/timer units
 ```
 
 ---
@@ -129,20 +150,26 @@ examples/              Example configuration and email templates
 
 ### Completed
 
-- Raspberry Pi 5 local NAS snapshots
+- Raspberry Pi 5 local Restic backups
 - Raspberry Pi 5 encrypted offsite replication
-- Windows 11 EaseUS backup replication from NAS to encrypted pCloud storage
-- Integrity verification, retention, restore validation, and notifications
+- Windows 11 EaseUS offsite replication
+- Ubuntu Desktop Restic backup automation
+- Ubuntu Desktop automated retention and pruning
+- Ubuntu systemd scheduling
+- Restore validation
+- Integrity verification
+- Email notifications
 
 ### In Progress
 
-- Ubuntu Desktop restic backups to NFS-mounted NAS storage
-- Ubuntu encrypted offsite replication through the Raspberry Pi 4 coordinator
+- Raspberry Pi 5 systemd integration
+- Documentation expansion
+- Troubleshooting documentation
 
 ### Planned
 
 - Raspberry Pi 4 NAS configuration backup
-- Additional Raspberry Pi OS systems
+- Additional Raspberry Pi backup targets
 
 ---
 
@@ -164,4 +191,6 @@ This repository is based on a real production backup workflow adapted into a pub
 
 Sensitive information such as usernames, hostnames, credentials, email addresses, and storage paths has been replaced with generic examples.
 
-AI tools (ChatGPT) were used for brainstorming, architecture discussions, script refinement, debugging, documentation support, and code review.
+AI tools (ChatGPT) were used for architecture discussions, documentation drafting, troubleshooting, shell command validation, script refinement, and code review.
+
+Final implementation, deployment, production testing, validation, and operational verification were performed manually on the target systems.
