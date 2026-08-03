@@ -26,7 +26,31 @@ Before using the Windows backup workflow, ensure that:
 - Windows stores backup images on the NAS
 - Raspberry Pi has access to the backup directory
 - rclone with pCloud Crypt has been configured
-  
+
+## Configuration
+
+The public script contains generic example paths that must be adapted to the target environment before deployment.
+
+Important settings include:
+
+```bash
+LOCAL_BASE="/path/to/nas/easeus_w11_backups/<COMPUTER_NAME>/Disks backup"
+REMOTE_BASE="pcloud-crypt:windows-11/easeus"
+
+RCLONE_TIMEOUT="24h"
+MINIMUM_FILE_AGE_MINUTES=60
+
+DRY_RUN=true
+
+LOCK_FILE="/tmp/windows11-offsite-backup.lock"
+LOG_FILE="/path/to/nas/easeus_w11_backups/windows11-offsite-backup.log"
+
+MAIL_HELPER="/usr/local/bin/send-backup-mail.py"
+RCLONE_CONFIG="/path/to/rclone/rclone.conf"
+```
+
+`DRY_RUN=true` should remain enabled until the detected changes have been reviewed. Production execution requires an environment-specific installed copy with validated paths and `DRY_RUN=false`.
+
 ## Backup Workflow
 
 The Windows backup process consists of several stages.
@@ -66,6 +90,21 @@ Disks backup_YYYYMMDD_Inc_v1.pbd
 
 Expired backup files removed by EaseUS are automatically removed from encrypted cloud storage during synchronization.
 
+## EaseUS Backup Chain Behaviour
+
+EaseUS may occasionally consolidate or rewrite an existing backup chain.
+
+A large Full `.pbd` file can therefore retain the same filename and size while its contents change. Modification times alone are not sufficient to determine whether the cloud copy is current.
+
+During production validation, `rclone cryptcheck` confirmed that a local and cloud Full backup with the same name and size contained different data. The updated Full backup therefore had to be uploaded again.
+
+For this reason:
+
+- `--size-only` must not be used
+- large uploads may occur after EaseUS consolidation
+- the first run after a changed backup chain should be reviewed using dry-run mode
+- encrypted upload validation must complete before the run is considered successful
+
 ## Synchronization
 
 Synchronization is performed using:
@@ -74,25 +113,49 @@ Synchronization is performed using:
 rclone sync
 ```
 
-The coordinator:
+Before synchronization, the coordinator:
 
-- validates the newest backup
-- waits until files become stable
-- synchronizes to encrypted storage
-- verifies uploaded data using cryptcheck
+1. verifies that the source directory exists
+2. detects EaseUS `.pbd` files
+3. checks that the backup files are old enough to be considered complete
+4. creates a source manifest containing file paths, sizes, and modification times
+5. verifies access to the encrypted pCloud remote
 
-## Validation
+The default minimum file age is 60 minutes. The script does not wait for a newly created backup to become old enough; it exits safely and can be run again later.
 
-The Windows workflow has been validated using production backups.
+During synchronization:
+
+- a lock prevents overlapping executions
+- a 24-hour timeout limits stalled or unexpectedly long transfers
+- `rclone sync` updates the encrypted destination to match the current local EaseUS backup set
+- files removed locally by EaseUS may also be removed from the encrypted cloud mirror
+- transfer statistics are reported at five-minute intervals
+
+After synchronization:
+
+- `rclone cryptcheck` validates the encrypted cloud copy
+- a second source manifest is created
+- the initial and final manifests are compared
+- the run fails if the EaseUS backup set changed during synchronization
+- a success or failure notification is generated
+
+In dry-run mode, pCloud is not modified and `cryptcheck` is skipped.
 
 Verified functionality includes:
 
-- EaseUS backup detection
-- backup stability verification
+- EaseUS `.pbd` backup detection
+- minimum backup age validation
+- source manifest creation
+- encrypted pCloud connectivity validation
+- safe dry-run execution
 - encrypted upload
-- cryptcheck validation
+- `rclone cryptcheck` validation
+- source stability verification during the complete run
 - synchronization after new incremental backups
-- deletion of obsolete cloud backups
+- replacement of a modified Full backup
+- deletion of obsolete cloud backup-chain files
+- timeout protection
+- overlapping-run prevention
 - success logging
 
 ## Logging
@@ -131,19 +194,30 @@ Verify:
 
 ---
 
-### cryptcheck fails
+### `cryptcheck` fails
 
-Run the synchronization again.
+A failed `cryptcheck` means that the encrypted cloud copy does not match the local EaseUS backup set.
 
-The backup is not considered successful until cryptcheck completes successfully.
+Do not treat the backup as successful.
 
-## Status
+Check:
+
+- whether EaseUS modified or consolidated the backup chain
+- whether a same-named Full backup changed internally
+- whether the upload completed without network or storage errors
+- whether the local source remained unchanged during the run
+
+Run a dry-run comparison before repeating production synchronization.
 
 Current implementation status:
 
 - ✅ EaseUS integration
-- ✅ Automatic synchronization
+- ✅ Manual offsite synchronization workflow
+- ✅ Safe dry-run validation
 - ✅ Encrypted pCloud replication
-- ✅ cryptcheck validation
+- ✅ `cryptcheck` validation
+- ✅ Source stability verification
 - ✅ Logging
+- ✅ Email notification support
 - ✅ Production tested
+- ⏳ Scheduled execution on the Raspberry Pi 4 coordinator
