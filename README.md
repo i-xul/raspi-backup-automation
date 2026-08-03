@@ -40,6 +40,8 @@ Ubuntu ──────────┘                    ▼
                               Email notifications
 ```
 
+See `docs/architecture.md` for a detailed description of the complete architecture and backup workflow.
+
 ---
 
 ## Backup Workflow
@@ -188,13 +190,12 @@ Project documentation is organized by platform.
 
 ## Future Expansion
 
-Planned future improvements include:
+Planned long-term improvements include:
 
-- Raspberry Pi 4 NAS configuration backup
-- additional Raspberry Pi backup targets
 - multiple encrypted offsite destinations
-- expanded documentation and monitoring
-- optional centralized backup status dashboard
+- centralized backup monitoring dashboard
+- backup health reporting
+- backup metrics and statistics
 
 ---
 
