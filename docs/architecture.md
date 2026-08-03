@@ -4,7 +4,7 @@
 
 The backup solution uses a centralized coordinator architecture.
 
-Source systems create or transfer their backups to NAS storage attached directly to a Raspberry Pi 4. The Raspberry Pi 4 then handles encrypted offsite replication, integrity verification, retention, logging, and email notifications.
+Source systems create or transfer their backups to NAS storage attached directly to a Raspberry Pi 4. The Raspberry Pi 4 handles centralized encrypted offsite replication, integrity verification, logging, and email notifications. Source-specific local retention may also be handled directly by the source system, as with Ubuntu Desktop Restic snapshots.
 
 The workflow remains divided into two independent stages:
 
@@ -22,7 +22,7 @@ Raspberry Pi 5 ──► Timestamped NAS snapshots ──┐
                                                │
 Windows 11 ─────► EaseUS backup files ─────────┼──►    Raspberry Pi 4
                                                │     Backup Coordinator
-Ubuntu ─────────► Restic repository on NAS ─-──┘              │
+Ubuntu ─────────► Restic repository on NAS ────┘              │
                                                               ▼
                                                    Encrypted pCloud storage
                                                               │
@@ -53,7 +53,7 @@ Coordinator responsibilities include:
 - validating backup freshness or completeness
 - encrypted pCloud upload
 - `rclone cryptcheck`
-- source-specific retention
+- source-specific offsite retention where applicable
 - logging
 - success and failure notifications
 
@@ -69,6 +69,8 @@ Current and planned source formats include:
 - Ubuntu restic repositories stored on NFS-mounted NAS storage
 
 This stage focuses only on producing a reliable local recovery point. No cloud synchronization is performed by the source system.
+
+Ubuntu Desktop also manages its local Restic snapshot retention and repository pruning independently through systemd.
 
 ---
 

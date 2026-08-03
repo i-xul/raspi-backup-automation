@@ -130,7 +130,9 @@ config/
 └── ubuntu/               Backup and retention configuration
 
 docs/
-└── ubuntu/               Platform-specific documentation
+├── architecture.md
+├── ubuntu/               Platform-specific documentation
+└── windows11/
 
 examples/                 Example configuration files
 
@@ -143,6 +145,17 @@ scripts/
 systemd/
 └── ubuntu/               Backup and retention service/timer units
 ```
+
+---
+
+## Documentation
+
+Project documentation is organized by platform.
+
+- `docs/architecture.md` — Overall backup architecture
+- `docs/ubuntu/README.md` — Ubuntu Desktop backup implementation
+- `docs/windows11/README.md` — Windows 11 backup workflow
+- `VALIDATION.md` — Production validation and testing
 
 ---
 
@@ -162,9 +175,9 @@ systemd/
 
 ### In Progress
 
-- Raspberry Pi 5 systemd integration
 - Documentation expansion
-- Troubleshooting documentation
+- Platform documentation
+- Restore documentation
 
 ### Planned
 
