@@ -37,8 +37,12 @@ sudo apt install restic
 Initialize the repository:
 
 ```bash
-restic init
+restic \
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p ~/.config/restic/password \
+  init
 ```
+The password file must be stored securely and backed up separately. Losing the repository password makes the backup data unrecoverable.
 
 The repository is stored on the NAS.
 
@@ -60,6 +64,41 @@ repository/
 ```
 
 The repository is shared over NFS and mounted on the Ubuntu Desktop before scheduled backups are executed.
+
+## NFS Storage
+
+The Restic repository is stored on NAS storage attached to the Raspberry Pi 4 backup coordinator.
+
+The NAS backup share is mounted on Ubuntu Desktop at:
+
+```text
+/mnt/nas-backups
+```
+
+The Restic repository is located at:
+
+```text
+/mnt/nas-backups/ubuntu-desktop/repository
+```
+
+The NFS mount is configured persistently through `/etc/fstab`.
+
+Example:
+
+```fstab
+<NAS_IP>:/mnt/usb2_raid/share/backups  /mnt/nas-backups  nfs  defaults,_netdev,nofail,x-systemd.automount  0  0
+```
+
+The production environment uses:
+
+- NFS version 4.2 over TCP
+- `_netdev` for network-dependent mounting
+- `nofail` to allow normal startup when the NAS is unavailable
+- `x-systemd.automount` for on-demand mounting
+
+The backup scripts verify that `/mnt/nas-backups` is an active mount point before accessing the repository. This prevents backup data from being written accidentally to an unmounted local directory.
+
+The NFS export keeps `root_squash` enabled. Squashed root access is mapped to the NAS backup owner using `anonuid` and `anongid`, allowing the root-run Restic process to read protected Ubuntu system files without granting remote root privileges on the NAS.
 
 ## Configuration Files
 
@@ -108,8 +147,9 @@ Verify that the backup completed successfully:
 
 ```bash
 sudo restic \
-    -r /path/to/repository \
-    snapshots
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p /home/<USERNAME>/.config/restic/password \
+  snapshots
 ```
 
 The backup service writes detailed logs to:
@@ -128,20 +168,31 @@ List available snapshots:
 
 ```bash
 sudo restic \
-    -r /path/to/repository \
-    snapshots
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p /home/<USERNAME>/.config/restic/password \
+  snapshots
 ```
 
 Restore a snapshot:
 
 ```bash
 sudo restic \
-    -r /path/to/repository \
-    restore <snapshot-id> \
-    --target /restore/location
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p /home/<USERNAME>/.config/restic/password \
+  restore <snapshot-id> \
+  --target /restore/location
 ```
 
-Individual files or directories can also be restored using Restic's include options.
+Restore an individual file from the latest snapshot:
+
+```bash
+sudo restic \
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p /home/<USERNAME>/.config/restic/password \
+  restore latest \
+  --target /tmp/restic-test \
+  --include /etc/fstab
+```
 
 ## Retention Policy
 
@@ -197,7 +248,7 @@ Timer:
 ubuntu-desktop-retention.timer
 ```
 
-Runs every Sunday after the scheduled backup has completed.
+Runs every Sunday at 03:00, one hour after the scheduled backup start time.
 
 ## Logging
 
@@ -270,6 +321,7 @@ sudo less /var/log/raspi-backup-automation/ubuntu-desktop-retention.log
 
 ```bash
 sudo restic \
-    -r /path/to/repository \
-    snapshots
+  -r /mnt/nas-backups/ubuntu-desktop/repository \
+  -p /home/<USERNAME>/.config/restic/password \
+  snapshots
 ```

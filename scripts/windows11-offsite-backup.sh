@@ -45,7 +45,7 @@ set -Eeuo pipefail
 # Configuration
 ###############################################################################
 
-LOCAL_BASE="/path/to/nas/easeus_w11_backups/HMASI/Disks backup"
+LOCAL_BASE="/path/to/nas/easeus_w11_backups/<COMPUTER_NAME>/Disks backup"
 REMOTE_BASE="pcloud-crypt:windows-11/easeus"
 
 RCLONE_TIMEOUT="24h"
