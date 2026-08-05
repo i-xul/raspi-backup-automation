@@ -40,7 +40,7 @@ Ubuntu ──────────┘                    ▼
                               Email notifications
 ```
 
-See `docs/architecture.md` for a detailed description of the complete architecture and backup workflow.
+See the [architecture documentation](docs/architecture.md) for a detailed description of the complete architecture and backup workflow.
 
 ---
 
@@ -95,7 +95,7 @@ Successfully verified:
 - success notifications
 - failure notifications
 
-Detailed validation results are documented in `VALIDATION.md`.
+Detailed validation results are documented in [VALIDATION.md](VALIDATION.md).
 
 ---
 
@@ -124,40 +124,50 @@ Current technologies include:
 ## Repository Structure
 
 ```text
-README.md                 Project overview
-
-VALIDATION.md             Production validation results
+README.md                         Project overview
+CHANGELOG.md                      Release history
+VALIDATION.md                     Production validation results
+LICENSE                           MIT License
 
 config/
-└── ubuntu/               Backup and retention configuration
+└── ubuntu/                       Ubuntu backup and retention configuration
 
 docs/
-├── architecture.md
-├── ubuntu/               Platform-specific documentation
+├── architecture.md               Overall architecture
+├── project-notes.md              Project background and lessons
+├── ubuntu/
+│   └── README.md                 Ubuntu Desktop documentation
 └── windows11/
+    └── README.md                 Windows 11 documentation
 
-examples/                 Example configuration files
+examples/
+├── backup-mail.env.example       SMTP configuration example
+├── backup-email-ok.txt           Successful notification example
+└── backup-email-failed.txt       Failed notification example
 
 scripts/
-├── Raspberry Pi
-├── Ubuntu Desktop
-├── Windows 11
-└── Shared helper utilities
+├── raspi5-offsite-backup.sh
+├── windows11-offsite-backup.sh
+├── ubuntu-desktop-backup.sh
+├── ubuntu-desktop-retention.sh
+└── send-backup-mail.py
 
 systemd/
-└── ubuntu/               Backup and retention service/timer units
+└── ubuntu/                       Backup and retention service/timer units
 ```
 
 ---
 
 ## Documentation
 
-Project documentation is organized by platform.
+Project documentation is organized by platform and topic.
 
-- `docs/architecture.md` — Overall backup architecture
-- `docs/ubuntu/README.md` — Ubuntu Desktop backup implementation
-- `docs/windows11/README.md` — Windows 11 backup workflow
-- `VALIDATION.md` — Production validation and testing
+- [Architecture](docs/architecture.md) — Overall backup architecture
+- [Project Notes](docs/project-notes.md) — Design lessons and project background
+- [Ubuntu Desktop](docs/ubuntu/README.md) — Ubuntu Desktop backup implementation
+- [Windows 11](docs/windows11/README.md) — Windows 11 backup workflow
+- [Validation](VALIDATION.md) — Production validation and testing
+- [Changelog](CHANGELOG.md) — Release history and planned development
 
 ---
 
@@ -196,6 +206,7 @@ Planned long-term improvements include:
 - centralized backup monitoring dashboard
 - backup health reporting
 - backup metrics and statistics
+- optional Telegram notifications for backup status and failure reporting
 
 ---
 
