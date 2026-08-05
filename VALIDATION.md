@@ -1,110 +1,206 @@
 # Validation
 
-This document summarizes the validation performed for the backup workflow.
+## Overview
 
-The goal was not only to verify that backups can be created, but also to confirm that the entire backup chain can be restored and trusted.
+This project has been validated using the production backup environment rather than isolated laboratory tests.
 
----
+Each major component has been verified independently before validating the complete end-to-end workflow.
 
-## Local Backup
-
-Verified successfully:
-
-- Local snapshot creation
-- Snapshot naming
-- Snapshot freshness validation
-- Latest snapshot symlink handling
-
-Status: ✅ Passed
+The validation process focused on backup reliability, restore capability, integrity verification, and automation readiness.
 
 ---
 
-## Encrypted Offsite Backup
+## Validation Scope
 
-Verified successfully:
+The following components have been validated:
 
-- Connection to encrypted cloud storage
-- Upload of the latest snapshot
-- Timeout handling
-- Locking to prevent overlapping executions
-
-Status: ✅ Passed
-
----
-
-## Integrity Verification
-
-Verified successfully:
-
-- `rclone cryptcheck`
-- File integrity verification
-- Symbolic link handling
-
-Status: ✅ Passed
+- Raspberry Pi local backups
+- Ubuntu Desktop Restic backups
+- Windows 11 EaseUS offsite replication
+- encrypted pCloud storage
+- rclone cryptcheck verification
+- snapshot retention
+- repository pruning
+- restore procedures
+- logging
+- email notifications
+- systemd automation
 
 ---
 
-## Snapshot Retention
+# Raspberry Pi Backup Validation
 
-Verified successfully:
+Verified:
 
-- Automatic cloud snapshot retention
-- No deletion before successful validation
-- Safe handling when retention threshold is not exceeded
+- local backup creation
+- snapshot creation
+- encrypted offsite upload
+- integrity verification
+- backup retention
+- success notification
+- failure notification
 
-Status: ✅ Passed
+Status:
 
----
-
-## Restore Validation
-
-Verified successfully:
-
-- Full restore from encrypted cloud storage
-- Directory structure
-- File integrity
-- Symbolic links
-
-Status: ✅ Passed
+✅ Production validated
 
 ---
 
-## Notification Handling
+# Ubuntu Desktop Validation
 
-Verified successfully:
+Verified:
 
-- Success email
-- Failure email
-- Log generation
+- Restic repository initialization
+- repository access through NFS
+- backup creation
+- snapshot listing
+- backup logging
+- manual execution
+- systemd service execution
+- enabled weekly systemd timer configuration
 
-Status: ✅ Passed
+Status:
 
----
-
-## Disaster Recovery
-
-Verified successfully:
-
-- Recovery configuration exported
-- Recovery configuration stored separately
-- Recovery procedure documented
-
-Status: ✅ Passed
+✅ Production validated
 
 ---
 
-## Validation Summary
+# Ubuntu Retention Validation
 
-The complete backup workflow has been validated in a real self-hosted environment.
+Verified:
 
-The following stages have been successfully verified:
+- dry-run execution
+- production execution
+- snapshot removal
+- repository pruning
+- retention logging
+- systemd service execution
+- enabled systemd timer configuration
 
-- Local backup
-- Encrypted offsite replication
-- Integrity verification
-- Restore procedure
-- Snapshot retention
-- Notification handling
-- Disaster recovery preparation
+Status:
 
-The backup workflow is therefore considered validated for production use within the project's intended environment.
+✅ Production validated
+
+---
+
+# Windows 11 Validation
+
+Verified:
+
+- EaseUS `.pbd` backup discovery
+- minimum backup age validation
+- source manifest creation
+- encrypted pCloud connectivity validation
+- safe dry-run comparison
+- encrypted synchronization
+- `rclone cryptcheck` validation
+- source manifest comparison after synchronization
+- removal of obsolete cloud-chain files
+- replacement of a modified Full backup
+- successful end-to-end production run
+
+Status:
+
+✅ Production validated
+
+---
+
+# Integrity Verification
+
+Verified:
+
+- rclone cryptcheck
+- encrypted repository comparison
+- upload validation before offsite retention where applicable
+
+Status:
+
+✅ Production validated
+
+---
+
+# Restore Validation
+
+Verified:
+
+- Restic snapshot listing
+- individual Ubuntu file restore
+- complete Raspberry Pi backup restore
+- symbolic link preservation
+- directory structure preservation
+
+Status:
+
+✅ Production validated
+
+---
+
+# Notifications
+
+Verified:
+
+- success email
+- failure email
+- execution summary
+- error reporting
+
+Status:
+
+✅ Production validated
+
+---
+
+# Logging
+
+Verified:
+
+- backup logs
+- retention logs
+- synchronization logs
+- error logging
+
+Status:
+
+✅ Production validated
+
+---
+
+# Operational Testing
+
+The backup components have been executed repeatedly in the production environment through manual runs and systemd services.
+
+Verified operational behaviour includes:
+
+- repeated incremental Ubuntu backup runs
+- repeated Ubuntu retention runs
+- a complete Windows offsite synchronization and integrity-validation cycle
+- Raspberry Pi backup and offsite workflows
+- enabled weekly Ubuntu backup and retention timers
+
+Long-term unattended timer operation remains under observation.
+
+---
+
+# Validation Summary
+
+| Component | Status |
+|-----------|--------|
+| Raspberry Pi backups | ✅ |
+| Ubuntu Restic backups | ✅ |
+| Ubuntu retention | ✅ |
+| Windows EaseUS replication | ✅ |
+| Encrypted cloud storage | ✅ |
+| Integrity verification | ✅ |
+| Restore testing | ✅ |
+| Logging | ✅ |
+| Notifications | ✅ |
+| systemd services | ✅ |
+| systemd timer configuration | ✅ Enabled, monitoring ongoing |
+
+---
+
+## Conclusion
+
+The backup workflow has been validated in a real production environment.
+
+Backups are not considered successful until they have completed all required stages, including integrity verification, retention processing where applicable, logging, and successful restore validation.
