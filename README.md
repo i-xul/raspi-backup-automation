@@ -187,9 +187,7 @@ Project documentation is organized by platform and topic.
 
 ### In Progress
 
-- Documentation expansion
-- Platform documentation
-- Restore documentation
+- Long-term monitoring of scheduled backup and retention automation
 
 ### Planned
 
