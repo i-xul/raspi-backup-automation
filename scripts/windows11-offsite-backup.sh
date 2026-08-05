@@ -87,6 +87,8 @@ send_mail() {
     local status="$1"
     local body_file="$2"
 
+    # Input redirection is intentionally handled by the calling shell.
+    # shellcheck disable=SC2024
     if ! sudo BACKUP_NAME="Windows 11 EaseUS offsite" \
         "$MAIL_HELPER" "$status" < "$body_file"
     then

@@ -78,6 +78,8 @@ send_mail() {
     local status="$1"
     local body_file="$2"
 
+    # Input redirection is intentionally handled by the calling shell.
+    # shellcheck disable=SC2024
     if ! sudo "$MAIL_HELPER" "$status" < "$body_file"; then
         logger -t raspi5-offsite-backup \
             "Could not send $status email notification. See $LOG_FILE"

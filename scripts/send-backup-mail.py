@@ -4,7 +4,7 @@
 #
 # Backup Email Notification Helper
 #
-# Sends success or failure notifications for the Raspberry Pi backup workflow.
+# Sends success or failure notifications for the backup automation workflows.
 #
 # Configuration is loaded from an external environment file so SMTP
 # credentials are never stored inside the repository.
