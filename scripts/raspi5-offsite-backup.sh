@@ -261,6 +261,30 @@ fi
 log "pCloud upload completed."
 
 ###############################################################################
+# Temporary Upload Cleanup
+###############################################################################
+
+# pCloud may occasionally leave rclone temporary .partial files behind even
+# after an otherwise successful upload. These files are not part of the source
+# snapshot and would cause cryptcheck to report false differences.
+#
+# Remove only .partial files from the current remote snapshot before integrity
+# verification. No other files are affected.
+
+log "Checking for stale temporary upload files..."
+
+if ! timeout 5m rclone delete \
+    "$REMOTE_DEST" \
+    --include "*.partial" \
+    --log-level NOTICE \
+    >> "$REPORT_FILE" 2>&1
+then
+    fail "Failed or timed out while removing temporary upload files."
+fi
+
+log "Temporary upload cleanup completed."
+
+###############################################################################
 # Integrity Verification
 ###############################################################################
 
