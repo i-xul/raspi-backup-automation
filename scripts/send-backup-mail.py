@@ -115,4 +115,20 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except smtplib.SMTPAuthenticationError:
+        print("Mail delivery failed: SMTP authentication error", file=sys.stderr)
+        sys.exit(1)
+    except smtplib.SMTPException:
+        print("Mail delivery failed: SMTP protocol error", file=sys.stderr)
+        sys.exit(1)
+    except (KeyError, ValueError):
+        print("Mail delivery failed: invalid SMTP configuration", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print("Mail delivery failed: configuration file permission error", file=sys.stderr)
+        sys.exit(1)
+    except (TimeoutError, ConnectionError, OSError):
+        print("Mail delivery failed: network, file or connection error", file=sys.stderr)
+        sys.exit(1)

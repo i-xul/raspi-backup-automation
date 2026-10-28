@@ -77,16 +77,36 @@ cleanup() {
 send_mail() {
     local status="$1"
     local body_file="$2"
+    local mail_error
+    local mail_rc
+
+    mail_error="$(mktemp)" || {
+        logger -t raspi5-offsite-backup \
+            "Could not create temporary file for mail error logging."
+        return 0
+    }
 
     # Input redirection is intentionally handled by the calling shell.
     # shellcheck disable=SC2024
-    if ! sudo "$MAIL_HELPER" "$status" < "$body_file"; then
-        logger -t raspi5-offsite-backup \
-            "Could not send $status email notification. See $LOG_FILE"
-
-        echo "WARNING: Could not send $status email notification." \
-            >> "$LOG_FILE"
+    if sudo -n "$MAIL_HELPER" "$status" < "$body_file" 2>"$mail_error"; then
+        rm -f "$mail_error"
+        return 0
+    else
+        mail_rc=$?
     fi
+
+    logger -t raspi5-offsite-backup \
+        "Could not send $status email notification (exit code $mail_rc). See $LOG_FILE"
+
+    {
+        echo "WARNING: Could not send $status email notification."
+        echo "Mail helper exit code: $mail_rc"
+        echo "Mail helper stderr:"
+        cat "$mail_error"
+    } >> "$LOG_FILE"
+
+    rm -f "$mail_error"
+    return 0
 }
 
 

@@ -1,0 +1,5 @@
+# Keep Linux scripts in LF format on all platforms
+*.sh text eol=lf
+
+# Keep Python source files in LF format
+*.py text eol=lf
