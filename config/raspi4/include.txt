@@ -1,0 +1,9 @@
+
+/etc
+/boot/firmware
+/home/hmasi/.config
+/home/hmasi/.ssh
+/home/hmasi/scripts
+/opt/raspi-audit
+/usr/local/bin
+/usr/local/etc

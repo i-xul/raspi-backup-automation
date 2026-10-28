@@ -1,0 +1,34 @@
+
+# Raspberry Pi 4 configuration backup exclusions
+
+# NAS and external storage
+/mnt
+/media
+
+# Runtime, temporary and cache data
+/proc
+/sys
+/dev
+/run
+/tmp
+/var/tmp
+/lost+found
+
+# User caches and transient data
+/home/hmasi/.config/*/Cache
+/home/hmasi/.config/*/cache
+/home/hmasi/.config/nordvpn/fileshare_history.db
+
+# Temporary files
+*.tmp
+*.part
+*.swp
+*.swo
+
+# SQLite runtime files
+*-wal
+*-shm
+
+*.db
+*.sqlite
+*.sqlite3
