@@ -10,7 +10,7 @@ umask 077
 EXPORT_DIR="/var/lib/raspi4-config-export"
 BACKUP_USER="raspi4backup"
 ARCHIVE="${EXPORT_DIR}/raspi4-config.tar"
-LOCK_FILE="/run/lock/raspi4-config-export.lock"
+LOCK_FILE="/run/raspi4-config-export.lock"
 TEMP_ARCHIVE=""
 
 SOURCES=(
