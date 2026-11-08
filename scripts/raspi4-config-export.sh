@@ -10,6 +10,7 @@ umask 077
 EXPORT_DIR="/var/lib/raspi4-config-export"
 BACKUP_USER="raspi4backup"
 ARCHIVE="${EXPORT_DIR}/raspi4-config.tar"
+LOCK_FILE="/run/lock/raspi4-config-export.lock"
 TEMP_ARCHIVE=""
 
 SOURCES=(
@@ -48,6 +49,23 @@ fi
 
 if [[ ! -d "${EXPORT_DIR}" || -L "${EXPORT_DIR}" ]]; then
     echo "ERROR: Export directory is missing or is a symlink." >&2
+    exit 1
+fi
+
+if [[ "$(stat -c '%u:%g' "${EXPORT_DIR}")" != "0:0" ]]; then
+    echo "ERROR: Export directory must be owned by root:root." >&2
+    exit 1
+fi
+
+if [[ -n "$(find "${EXPORT_DIR}" -maxdepth 0 -perm /022 -print)" ]]; then
+    echo "ERROR: Export directory has unsafe write permissions." >&2
+    exit 1
+fi
+
+exec 9>"${LOCK_FILE}"
+
+if ! flock -n 9; then
+    echo "ERROR: Another configuration export is already running." >&2
     exit 1
 fi
 
